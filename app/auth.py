@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user
-from .models import User
+from .models import User, Role
 from . import db
 
 auth = Blueprint('auth', __name__, url_prefix='/auth')
@@ -29,6 +29,7 @@ def signup():
         email = request.form.get('email')
         name = request.form.get('name')
         password = request.form.get('password')
+        roles = request.form.getlist('roles[]')
 
         user = User.query.filter_by(email=email).first()
 
@@ -37,6 +38,8 @@ def signup():
             return redirect(url_for('auth.signup'))
 
         new_user = User(email=email, name=name, password=generate_password_hash(password, method='sha256'))
+        user_roles = list(map(lambda role: Role.query.get(int(role)), roles))
+        new_user.roles = user_roles
 
         db.session.add(new_user)
         db.session.commit()
@@ -50,4 +53,3 @@ def logout():
     logout_user()
     flash('You have been logged out')
     return redirect(url_for('auth.login'))
-
